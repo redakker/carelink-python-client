@@ -17,6 +17,44 @@ def writeJson(jsonobj, name):
    else:
       return True
 
+def createMyJSON(jsonobj):
+    #jsonData = json.loads(data)
+
+    mGDl = 0
+    time = 0
+    dataDateTime = datetime.datetime(year=2000, month=1, day=1, hour=1, minute=0, second=0)
+
+    # Extract the necessary data
+    # Get the value mg/dl
+    try:
+        mGDl = int(jsonobj["lastSG"]["sg"])
+    except:
+        print ("lastSG -> sg is not existing in the data");
+
+    try:
+        datetime_str = jsonobj["lastSG"]["datetime"]
+    except:
+        print ("lastSG -> time is not existing in the data");
+
+    # Get the time
+    try:
+        datetime_str = datetime_str[:-3] + datetime_str[-2:]  # Remove the colon from the offset
+        dataDateTime = datetime.datetime.strptime(datetime_str, '%Y-%m-%dT%H:%M:%S.%f%z');
+    except:
+        print ("Cannot convert the time data to time object");
+
+    # convert into mmol/L
+    mmolL = mGDl / 18.0182
+
+    # Create my (simplified) JSON object
+    myJSON = {
+        'mmol': round (mmolL,2),
+        'time': dataDateTime.strftime("%H:%M:%S"),
+        'date': dataDateTime.strftime("%Y-%m-%d")
+    }
+
+    return json.dumps(myJSON)
+
 
 # Parse command line 
 parser = argparse.ArgumentParser()
@@ -68,9 +106,10 @@ if client.login():
                elif client.getLastResponseCode() == 200:
                   # Data OK
                   if client.getLastDataSuccess():
-                     if writeJson(recentData, "data"):
-                        if verbose:
-                           print("data saved!")
+                     print (createMyJSON(recentData));
+                     #if writeJson(recentData, "data"):
+                        #if verbose:
+                           #print("data saved!")
                   # Data error
                   else:
                      print("Data exception: " + "no details available" if client.getLastErrorMessage() == None else client.getLastErrorMessage())
